@@ -41,7 +41,7 @@ class FBClient extends FabricClient {
             var err_found = null;
 
             // check if the number of Proposal Responses is 5
-            all_proposal_good = proposalResponses.length === 5;
+            all_proposal_good = proposalResponses.length === 2;
 
             // check if all Proposal Responses status are OK and valided digital signature
             for(var i in proposalResponses) {

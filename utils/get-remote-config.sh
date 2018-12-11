@@ -47,33 +47,36 @@ rm -rf ${TMP_CONFIG_PATH}/*
 rm -rf /tmp/hfc-cvs
 rm -rf /tmp/hfc-kvs
 echo "get from server ${IP}... to tmp directory"
-scp -i ${k} -r ubuntu@${IP}:/home/ubuntu/hyperledgerconfig/data/* ${TMP_CONFIG_PATH}/
+scp -i ${k} -r baotq@${IP}:/home/baotq/Study/Hyperledger-Fabric/fabric-samples/first-network/crypto-config/* ${TMP_CONFIG_PATH}/
 echo "done..."
 sleep 2
 echo "copy all material in {TMP_CONFIG_PATH} to {CONFIG_PATH}/crypto-config folder"
 cp -R ${TMP_CONFIG_PATH}/* ${CONFIG_PATH}/crypto-config/
 
-for org in $ORGS; do
-	if [ -f ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.key ]; then
-		mv ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.key ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/server.key
-	fi
-	if [ -f ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.crt ]; then
-		mv ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.crt ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/server.crt
-	fi
-done
+# for org in $ORGS; do
+# 	if [ -f ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.key ]; then
+# 		mv ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.key ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/server.key
+# 	fi
+# 	if [ -f ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.crt ]; then
+# 		mv ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/client.crt ${CONFIG_PATH}/crypto-config/orgs/${org}/admin/tls/server.crt
+# 	fi
+# done
+
 if [ -f ${CONFIG_PATH}/fabric-network-config/connection-profile.yaml ]; then
 	rm -f ${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 fi
 
 # create ${org}-profile.yaml" for each org:
 for org in $ORGS; do
+  if [ "${org}" != "Orderer" ]; then
+  orgLowerCase="${org,,}"
 	echo "# The name of connection profile
-name: \"${org} Client\"
+name: \"${orgLowerCase} Client\"
 version: \"1.0\"
 
 # Client section is for NodeJS SDK. 
 client:
-  organization: ${org} # The org that this app instance belong to
+  organization: ${orgLowerCase} # The org that this app instance belong to
   # set connection timeouts for the peer and orderer for the client
   connection:
     timeout:
@@ -94,27 +97,29 @@ client:
       # for example
       orderer: 30
   credentialStore: # KVS of Client instance
-    path: \"/tmp/hfc-kvs/${org}\"
+    path: \"/tmp/hfc-kvs/${orgLowerCase}\"
     cryptoStore: # Cryptosuite store of Client instance
-      path: \"/tmp/hfc-cvs/${org}\"
-" >>${CONFIG_PATH}/fabric-network-config/${org}-profile.yaml
+      path: \"/tmp/hfc-cvs/${orgLowerCase}\"
+" >>${CONFIG_PATH}/fabric-network-config/${orgLowerCase}-profile.yaml
+  fi
 done
 
 # Build connection-profile.yaml
-echo 'name: "Deevo network"
+echo 'name: "first-network network"
+description: "The network to be used to connect to first-network running under docker for studying"
 version: "1.0"
 # Optinal. But most app would have this so that channle objects can be constructed based on this section.
-channels:' >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
-
+channels:' >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml 
 for channel in $c; do
 	echo "
   ${channel}: # name of channel
     orderers:
-      - orderer0.org0.deevo.io
+      - orderer.example.com
     peers:" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 	for org in $ORGS; do
-		if [ "${org}" != "org0" ]; then
-			echo "      peer0.${org}.deevo.io:
+    if [ "${org}" != "Orderer" ]; then      
+      orgLowerCase="${org,,}"
+			echo "      peer0.${orgLowerCase}.example.com:
         endorsingPeer: true
         chaincodeQuery: true
         ledgerQuery: true
@@ -124,61 +129,81 @@ for channel in $c; do
 done
 
 echo "
+#
+# list of participating organizations in this network
+#
 organizations:" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 for org in $ORGS; do
-	if [ "${org}" != "org0" ]; then
-		echo "  ${org}:
-    mspid: ${org}MSP
+	if [ "${org}" != "Orderer" ]; then
+    orgLowerCase="${org,,}"
+		echo "  ${orgLowerCase}:
+    mspid: ${orgLowerCase}MSP
     peers: 
-      - peer0.${org}.deevo.io
+      - peer0.${orgLowerCase}.example.com
+      - peer1.${orgLowerCase}.example.com
     certificateAuthorities:
-      - rca.${org}.deevo.io
+      - rca.${orgLowerCase}.example.com
     adminPrivateKey:
-      path: configs/crypto-config/orgs/${org}/admin/tls/server.key
+      path: configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/users/Admin@${orgLowerCase}.example.com/msp/keystore/ADMIN_PRIVATE_KEY
     signedCert:
-      path: configs/crypto-config/orgs/${org}/admin/tls/server.crt" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
-	fi
+      path: configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/users/Admin@${orgLowerCase}.example.com/msp/signcerts/Admin@${orgLowerCase}.example.com-cert.pem" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
+	fi  
 done
+
 echo "
 orderers:
-  orderer0.org0.deevo.io:
-    url: grpcs://orderer0.org0.deevo.io:7050
+  orderer.example.com:
+    url: grpcs://orderer.example.com:7050
     grpcOptions:
-      ssl-target-name-override: orderer0.org0.deevo.io
+      ssl-target-name-override: orderer.example.com
       grpc-keepalive-timeout-ms: 3000
       grpc.keepalive_time_ms: 360000
       grpc-max-send-message-length: 10485760
       grpc-max-receive-message-length: 10485760
     tlsCACerts:
-      path: configs/crypto-config/orgs/org0/msp/tlscacerts/tls-rca-org0-deevo-io-7054.pem
+      path: configs/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 peers:" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 for org in $ORGS; do
-	if [ "${org}" != "org0" ]; then
-		echo "  peer0.${org}.deevo.io:
-    url: grpcs://peer0.${org}.deevo.io:7051
-    eventUrl: grpcs://peer0.${org}.deevo.io:7053
+	if [ "${org}" != "Orderer" ]; then
+    orgLowerCase="${org,,}"
+		echo "  peer0.${orgLowerCase}.example.com:
+    url: grpcs://peer0.${orgLowerCase}.example.com:7051
+    eventUrl: grpcs://peer0.${orgLowerCase}.example.com:7053
     grpcOptions:
-      ssl-target-name-override: peer0.${org}.deevo.io
+      ssl-target-name-override: peer0.${orgLowerCase}.example.com
       grpc.keepalive_time_ms: 600000
     tlsCACerts:
-      path: configs/crypto-config/orgs/${org}/msp/tlscacerts/tls-rca-${org}-deevo-io-7054.pem" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
+      path: configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/peers/peer0.${orgLowerCase}.example.com/msp/tlscacerts/tlsca.${orgLowerCase}.example.com-cert.pem" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
+
+    echo "  peer1.${orgLowerCase}.example.com:
+    url: grpcs://peer1.${orgLowerCase}.example.com:7051
+    eventUrl: grpcs://peer1.${orgLowerCase}.example.com:7053
+    grpcOptions:
+      ssl-target-name-override: peer1.${orgLowerCase}.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/peers/peer1.${orgLowerCase}.example.com/msp/tlscacerts/tlsca.${orgLowerCase}.example.com-cert.pem" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 	fi
 done
+
 echo "
 certificateAuthorities:" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
 for org in $ORGS; do
-	echo "  rca.${org}.deevo.io:
-    url: https://rca.${org}.deevo.io:7054
+  orgLowerCase="${org,,}"
+  if [ "${org}" != "Orderer" ]; then
+	echo "  rca.${orgLowerCase}.example.com:
+    url: https://rca.${orgLowerCase}.example.com:7054
     httpOptions:
       verify: false
     tlsCACerts:
-      path: configs/crypto-config/ca/tls.rca.${org}.deevo.io.pem
+      path: configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/ca/ca.${orgLowerCase}.example.com-cert.pem
     registrar:
-      - enrollId: rca-${org}-admin
-        enrollSecret: rca-${org}-adminpw
-    caName: rca.${org}.deevo.io" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
+      - enrollId: admin
+        enrollSecret: adminpw
+    caName: rca.${orgLowerCase}.example.com" >>${CONFIG_PATH}/fabric-network-config/connection-profile.yaml
+  fi  
 done
 
-# To run at local: ./utils/get-remote-config.sh -d ~/Working/Deevo/src/sc-api.deevo.io/configs -t /tmp/test-net -p 18.136.126.89 -k ~/Working/Deevo/pem/dev-full-rights.pem -g "org0 org1 org2 org3 org4 org5" -c "deevochannel aimthaichannel"
+# To run at local: ./utils/get-remote-config.sh -d ./configs -t /tmp/test-net -p localhost -k ~/Working/Deevo/pem/dev-full-rights.pem -g "Orderer Org1 Org2" -c "aimthaichannel"
 
 # To run at remote: ./utils/get-remote-config.sh -d /opt/gopath/src/github.com/deevotech/sc-api.deevo.io/configs -t /tmp/tempplate -p 18.136.126.89 -k /home/datlv/Documents/deevo/key/dev-full-rights.pem -g "org0 org1 org2 org3 org4 org5" -c "deevochannel aimthaichannel"
