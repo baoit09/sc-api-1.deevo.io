@@ -222,7 +222,7 @@ class FoodSupplyChainNetwork {
     // })    
 
     var dataAsBytes = new Buffer(JSON.stringify(data));		
-      var tx_id = this.fabricClient.newTransactionID(true);
+      var tx_id = this.fabricClient.newTransactionID();
       var requestData = {
         chaincodeId: constants.ChainCodeId,
         fcn: fcn,
