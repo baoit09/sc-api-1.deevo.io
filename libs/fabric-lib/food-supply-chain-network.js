@@ -1,6 +1,8 @@
 var fsx = require('fs-extra');
 var fabricClient = require('./fabric-client');
 var constants = require('../../utils/constants.js');
+
+const logger = require('fabric-client').getLogger('APPLICATION');
 //var enrollAdmin = require('../../utils/enrollAdmin');
 
 /**
@@ -50,50 +52,15 @@ class FoodSupplyChainNetwork {
           profile: 'tls'
         };
 
-        // return caService.enroll(request)
-        // .then((enrollment) => {      
-
-        //   console.log('Successfully enrolled user "admin"');              
-        //   return fabric_client.createUser(
-        //     {username: 'admin',
-        //         mspid: 'org1MSP',
-        //         cryptoContent: { privateKeyPEM: enrollment.key.toBytes(), signedCertPEM: enrollment.certificate }
-        //     });
-
-        //   let key = enrollment.key.toBytes();
-        //   let cert = enrollment.certificate;
-
-        //   /**
-        //    * Sets the mutual TLS client side certificate and key necessary to build
-        //    * network endpoints when working with a network configuration (connection profile).
-        //    * This must be called before a peer, orderer, or channel eventhub is needed.           
-        //    */
-        //   console.log('Sets the mutual TLS client side certificate and key necessary to build network endpoints');
-        //   this.fabricClient.setTlsClientCertAndKey(cert, key);
-
-        //   /**
-        //   * This user’s signing identity (the private key and its corresponding certificate), will be used to sign all requests
-	      //   * with the fabric backend.
-        //   */           
-        //   console.log('Set UserContext: [' + constants.OrgAdmin.Username + '] will be used to sign all requests with the fabric backend.');
-        //   return this.fabricClient.setUserContext({ username: constants.OrgAdmin.Username, password: constants.OrgAdmin.Password });
-
-        // }).catch((err) => {
-
-        //   console.error('Failed to tls-enroll admin-org1: ' + err);  
-        //   return Promise.reject(new Error('Failed to tls-enroll admin-org1: ' + err))         
-
-        // });
-
         return caService.enroll(request)
         }).then((enrollment) => {
 
-          console.log('Successfully enrolled admin user "admin"');
+          logger.info('Successfully enrolled admin user "admin"');
 
           let key = enrollment.key.toBytes();
           let cert = enrollment.certificate;
           this.fabricClient.setTlsClientCertAndKey(cert, key);
-          console.log('Successfully set the mutual TLS client side certificate and key necessary to build network endpoints');
+          logger.info('Successfully set the mutual TLS client side certificate and key necessary to build network endpoints');
     
           return this.fabricClient.createUser(
               {   
@@ -105,12 +72,12 @@ class FoodSupplyChainNetwork {
         }).then((user) => {
 
           this.admin_user = user;
-          console.log('Successfully UserContext: [' + this.userName + '] will be used to sign all requests with the fabric backend.');
+          logger.info('Successfully UserContext: [' + this.userName + '] will be used to sign all requests with the fabric backend.');
           return this.fabricClient.setUserContext(this.admin_user);
 
         }).catch((err) => {
 
-          console.error('Failed to tls-enroll ' + this.userName + ':' + err);  
+          logger.error('Failed to tls-enroll ' + this.userName + ':' + err);  
           return Promise.reject(new Error('Failed to tls-enroll ' + this.userName + ':' + err))         
 
         });  
@@ -132,6 +99,7 @@ class FoodSupplyChainNetwork {
         }
       }
       if (!mspID) {
+        logger.error('Network configuration is missing ttruehis client\'s organization and mspid');  
         throw new Error('Network configuration is missing ttruehis client\'s organization and mspid');
       }
 
@@ -153,7 +121,7 @@ class FoodSupplyChainNetwork {
     var caService;
     let username = `admin-${org}`;
     let password = `admin-${org}pw`;
-    console.log(`Enroll with username ${username}`);
+    logger.info(`Enroll with username ${username}`);
     this.fabricClient.loadFromConfig(`configs/fabric-network-config/${org}-profile.yaml`);
 
     // init the storages for client's state and cryptosuite state based on connection profile configuration 
@@ -170,7 +138,7 @@ class FoodSupplyChainNetwork {
                     { name: "hf.Registrar.Attributes" }
                 ]
             }).then((enrollment) => {
-                console.log('Successfully called the CertificateAuthority to get the TLS material');
+              logger.info('Successfully called the CertificateAuthority to get the TLS material');
                 let key = enrollment.key.toBytes();
                 let cert = enrollment.certificate;
 
@@ -186,23 +154,14 @@ class FoodSupplyChainNetwork {
    * Just use init if we wish to have one shared crypto material
 	 */
   init() {
+    //FBClient.setConfigSetting('initialize-with-discovery', true);
+    
     this._cleanUpTLSKeys();
     this._setUpTLSKeys()
     .then(() => {
         this._initChannelMSP()
         .then(() => {    
-            console.log('Successfully initialized ChannelMSP');
-            // var isAdmin = false;
-            // if (this.userName == constants.OrgAdmin.Username) {
-            //   isAdmin = true;
-            // }     
-            // // Restore the state of user by the given name from key value store 
-            // // and set user context for this connection.
-            // return this.fabricClient.getUserContext(this.userName, true)
-            // .then((user) => {
-            //   this.currentUser = user;
-            //   return user;
-            // })
+            logger.info('Successfully initialized ChannelMSP');           
         })
     });
   }

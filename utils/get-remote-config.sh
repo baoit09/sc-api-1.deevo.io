@@ -204,6 +204,22 @@ for org in $ORGS; do
   fi  
 done
 
+
+echo "Rename Org's Admins private keys to ADMIN_PRIVATE_KEY"
+for org in $ORGS; do
+  orgLowerCase="${org,,}"  
+  if [ "${org}" != "Orderer" ]; then
+    CURRENT_DIR=$PWD
+    cd configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/users/Admin@${orgLowerCase}.example.com/msp/keystore
+    PRIV_KEY=$(ls *_sk)
+    cd "$CURRENT_DIR"
+    cp configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/users/Admin@${orgLowerCase}.example.com/msp/keystore/${PRIV_KEY} configs/crypto-config/peerOrganizations/${orgLowerCase}.example.com/users/Admin@${orgLowerCase}.example.com/msp/keystore/ADMIN_PRIVATE_KEY
+  fi  
+done
+
+
+
+
 # To run at local: ./utils/get-remote-config.sh -d ./configs -t /tmp/test-net -p localhost -k ~/Working/Deevo/pem/dev-full-rights.pem -g "Orderer Org1 Org2" -c "aimthaichannel"
 
 # To run at remote: ./utils/get-remote-config.sh -d /opt/gopath/src/github.com/deevotech/sc-api.deevo.io/configs -t /tmp/tempplate -p 18.136.126.89 -k /home/datlv/Documents/deevo/key/dev-full-rights.pem -g "org0 org1 org2 org3 org4 org5" -c "deevochannel aimthaichannel"

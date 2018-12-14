@@ -31,7 +31,7 @@ organizations:
     certificateAuthorities:
       - rca.org1.example.com
     adminPrivateKey:
-      path: configs/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/574916d81ec538ab3c5d20e0ab5fba9318b552a495aa2fa524b250226b1dce9d_sk
+      path: configs/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/ADMIN_PRIVATE_KEY
     signedCert:
       path: configs/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem
   org2:
@@ -42,7 +42,7 @@ organizations:
     certificateAuthorities:
       - rca.org2.example.com
     adminPrivateKey:
-      path: configs/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/e109e66ef3a0db1a45f6d8ab7e94058f33a922143e1595bca7047a89e528bc4e_sk
+      path: configs/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/ADMIN_PRIVATE_KEY
     signedCert:
       path: configs/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem
 
